@@ -1,0 +1,252 @@
+---
+title: "CS 1675 Fall 2020: Coding live stream examples"
+subtitle: "Debugging examples"
+author: "Dr. Joseph P. Yurko"
+date: "9/28/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This markdown includes errors throughout several code chunks to practice debugging. The code chunks are all set to `eval=TRUE` for now, it is not possible to knit the document. If you want to knit and render the HTML file to just look at the code without any output, place `eval=FALSE` in the "document level" chunk options controlled by `knitr::opts_chunk()` in the `setup` code chunk.  
+
+```{r, load_packages}
+library(tidyverse)
+```
+
+Define a function which has a step that has a matrix multiplication.  
+
+```{r, define_my_function}
+my_function <- function(beta, my_info)
+{
+  X <- my_info$the_matrix_x
+  
+  beta * X
+}
+```
+
+Define a matrix `X` that is 5 rows and 3 columns.  
+
+```{r, make_the_x_matrix}
+set.seed(7123132)
+x1 <- rnorm(n = 5)
+x2 <- rnorm(n = 5)
+
+Xmat <- cbind( `(Intercept)` = rep(1, length(x1)), 
+               x1 = x1, 
+               x2 = x2)
+
+Xmat
+```
+
+Pass in the matrix `Xmat` into the `my_function()` function and multiply by a scalar number, 3. First, set the list of required information.  
+
+```{r, set_the_info_to_use}
+info_use <- list(
+  the_matrix_x = Xmat
+)
+```
+
+Now, call the function.  
+
+```{r}
+my_function(beta = 3, my_info = info_use)
+```
+
+What if I used a vector for the `beta` input argument?  
+
+```{r, set_a_beta_vector}
+beta_try <- c(1.25, 2.5)
+
+length(beta_try)
+
+dim(beta_try)
+
+class(beta_try)
+```
+
+Try the multiplication with the `beta_try` vector.  
+
+```{r}
+my_function(beta_try, info_use)
+```
+
+Element-wise multiplication, multiplies each element of two objects together.  
+
+```{r}
+c(1, 2, 3, 4) * c(4, 3, 2, 1)
+```
+
+We can manually perform the above operation as:  
+
+```{r}
+y1 <- 1:4
+y2 <- rev(1:4)
+```
+
+```{r}
+c(y1[1] * y2[1], y1[2] * y2[2], y1[3] * y2[3], y1[4] * y2[4])
+```
+
+The inner product requires a dimensionality because it is between matrices. Where a row or column vector is a 1D matrix.  
+
+Let's now convert the regular vector into a matrix object.  
+
+```{r}
+as.matrix(1:4)
+
+matrix(1:4)
+```
+
+The `matrix()` function has a few more options for control. For example to create a $2 \times 2$ matrix we can set `nrow=2`.  
+
+```{r}
+matrix(1:4, nrow = 2)
+```
+
+And we can choose to "fill" the matrix by rows or columns, first.  
+
+```{r}
+matrix(1:4, nrow = 2, byrow = TRUE)
+```
+
+Let's define a regular vector, `beta_vec`, that we then convert to a matrix type column vector, `beta_col`.  
+
+```{r}
+beta_vec <- c(1.25, -1, 2)
+
+beta_col <- matrix(beta_vec)
+
+beta_col
+```
+
+What will happen if I run `my_function()` with `beta_col` as the `beta` argument?  
+
+```{r}
+my_function(beta_col, info_use)
+```
+
+Check the data types and dimensionalities.  
+
+```{r}
+class(info_use$the_matrix_x)
+
+dim(info_use$the_matrix_x)
+
+class(beta_col)
+
+dim(beta_col)
+```
+
+Let's try and debug our code. To save space, we will define a new function that does the same thing as `my_function()`.  
+
+Debug using the `browser()` function. Or "hack" a debug with forcing a `return()`.  
+
+```{r}
+same_as_my_function <- function(beta, my_info)
+{
+  X <- my_info$the_matrix_x
+  
+  # browser()
+  
+  # return(class(X %*% beta))
+  
+  # return(dim(beta))
+  
+  beta * X
+}
+```
+
+Run `same_as_my_function()` with the input arguments that created the error.  
+
+```{r}
+same_as_my_function(beta_col, info_use)
+```
+
+Code the correct function and call it, `my_mean_trend()`.  
+
+```{r}
+my_mean_trend <- function(beta, my_info)
+{
+  X <- my_info$the_matrix_x
+  
+  X %*% beta
+}
+```
+
+```{r}
+my_mean_trend(beta_col, info_use)
+```
+
+We can convert the result of `my_mean_trend()` from a matrix to a "regular" vector using `as.numeric()`.  
+
+```{r}
+class( my_mean_trend(beta_col, info_use) )
+
+as.numeric( my_mean_trend(beta_col, info_use) )
+```
+
+What would happen if I pass in a column vector with the wrong number of elements?  
+
+```{r}
+my_mean_trend(as.matrix(1:7), info_use)
+```
+
+What happens if we pass in a "regular" numeric vector?  
+
+```{r}
+my_mean_trend(beta_vec, info_use)
+```
+
+Check that this is the same result as before.  
+
+```{r}
+my_mean_trend(beta_col, info_use) - my_mean_trend(beta_vec, info_use)
+```
+
+```{r}
+all.equal(my_mean_trend(beta_col, info_use), my_mean_trend(beta_vec, info_use))
+```
+
+```{r}
+info_use$the_matrix_x
+```
+
+```{r}
+t(beta_col) %>% as.numeric()
+```
+
+```{r}
+beta_col %>% as.numeric()
+```
+
+```{r}
+all.equal(as.numeric(beta_col), beta_vec)
+```
+
+```{r}
+all.equal(as.numeric(t(beta_col)), beta_vec)
+```
+
+What about a matrix?  
+
+```{r}
+as.numeric(matrix(1:4, nrow = 2))
+```
+
+```{r}
+matrix(1:4, nrow=2)
+```
+
+Compare that to when the matrix is ordered by rows.  
+
+```{r}
+as.numeric(matrix(1:4, nrow = 2, byrow = TRUE))
+```
+
+```{r}
+matrix(1:4, nrow=2, byrow=TRUE)
+```
+
