@@ -282,6 +282,42 @@ estimate_sse_grad <- function(unknowns, my_info)
 ### estimate the gradient at any set of parmaeter values
 estimate_sse_grad(rep(0, my_info_5_units$num_params), my_info_5_units)
 
+### check the optimization results when the "external" gradient function is provided
+fit_2_with_grad <- optim(start_guess_2,
+                         my_neuralnet_sse,
+                         gr = estimate_sse_grad,
+                         my_info_5_units,
+                         method = "BFGS",
+                         hessian = TRUE,
+                         control = list(maxit = 5001))
+
+fit_2_with_grad$par
+
+fit_2_with_grad$convergence
+
+fit_2_with_grad$counts
+
+### check the locally optimal parameter estimates
+fit_2_with_grad$par
+
+fit_2$par
+
+### summarize the absolute difference...the gradient calculated with the 
+### `numDeriv::grad()` function is more precise than the gradient estimated
+### by the default approach within `optim()`. With more than a few
+### hidden units, those differences start to matter and create some slight differences
+### between the identified optimal parameter values
+###
+### calculate min, average, and max absolute differences
+min( abs(fit_2_with_grad$par - fit_2$par) )
+mean( abs(fit_2_with_grad$par - fit_2$par) )
+max( abs(fit_2_with_grad$par - fit_2$par) )
+
+### check which parameters have the largest difference
+which.max( abs(fit_2_with_grad$par - fit_2$par) )
+fit_2_with_grad$par[ which.max( abs(fit_2_with_grad$par - fit_2$par) ) ]
+fit_2$par[ which.max( abs(fit_2_with_grad$par - fit_2$par) ) ]
+
 ### program our own gradient descent algorithm, to help understand what's
 ### going on when we use a starting guess of 0 for this example
 
